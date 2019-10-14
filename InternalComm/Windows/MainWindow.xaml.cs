@@ -1,5 +1,7 @@
-﻿using System;
+﻿using InternalComm.ViewModel;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,9 +22,18 @@ namespace InternalComm
     /// </summary>
     public partial class MainWindow : Window
     {
+        private readonly MainWindowViewModel _vm = new MainWindowViewModel();
+
         public MainWindow()
         {
             InitializeComponent();
+            this.DataContext = _vm;
+
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            _vm.addToCollection();
         }
     }
 }
