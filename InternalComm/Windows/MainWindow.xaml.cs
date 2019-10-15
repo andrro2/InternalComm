@@ -33,7 +33,12 @@ namespace InternalComm
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            _vm.addToCollection();
+            _vm.addToCollection(null, null);
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            _vm.ShutDown();
         }
     }
 }

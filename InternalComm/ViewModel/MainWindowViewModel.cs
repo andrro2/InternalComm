@@ -8,25 +8,42 @@ using System.Threading.Tasks;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Windows.Threading;
+using System.Threading;
+using InternalComm.Server;
+using InternalComm.Client;
 
 namespace InternalComm.ViewModel
 {
     class MainWindowViewModel
     {
-        private ObservableCollection<IPAddress> az = new ObservableCollection<IPAddress>();
+        private ObservableCollection<string> connectedUsers = new ObservableCollection<string>();
         private List<IPAddress> ipAdresses = new List<IPAddress>();
+        private Dictionary<string, IPAddress> avalibleClients = new Dictionary<string, IPAddress>();
         private string ipBase = "192.168.100.";
         private IPAddress localIp = null;
+        private IPEndPoint endpoint = null;
+        private LocalServer server;
+        private string name = "Rozner";
 
-        public ObservableCollection<IPAddress> Az { get => az; set => az = value; }
+        public ObservableCollection<string> ConnectedUsers { get => connectedUsers; set => connectedUsers = value; }
 
         public MainWindowViewModel() 
         {
             initLocalIp();
             initIpBase();
-            
+            server = new LocalServer(localIp, endpoint, name);
+            DispatcherTimer timer = new DispatcherTimer();
+            timer.Interval = new TimeSpan(0, 0, 5);
+            timer.Tick += new EventHandler(addToCollection);
+            timer.Start();
+            server.Start();
 
+        }
 
+        public void ShutDown() 
+        {
+            server.Stop();
         }
 
         private void pingCompleted(object sender, PingCompletedEventArgs e) 
@@ -34,8 +51,16 @@ namespace InternalComm.ViewModel
             string ip = (string)e.UserState;
             if (e.Reply != null && e.Reply.Status == IPStatus.Success) 
             {
-                ipAdresses.Add(IPAddress.Parse(ip));
+                if (!connectedUsers.Contains(ip) && !IPAddress.Parse(ip).Equals(localIp))
+                {
+                    ipAdresses.Add(IPAddress.Parse(ip));
+                    return;
+                }
+                return;
+
             }
+            else if(e.Reply.Status == IPStatus.TimeExceeded) { ipAdresses.Remove(IPAddress.Parse(ip)); }
+            
             /*if (e.Reply != null && e.Reply.Status == IPStatus.Success)
             {
                     string name;
@@ -57,7 +82,7 @@ namespace InternalComm.ViewModel
             }*/
         }
 
-        public void addToCollection()
+        public void addToCollection(Object sender, EventArgs e)
         {
             for (int i = 1; i < 255; i++)
             {
@@ -66,7 +91,17 @@ namespace InternalComm.ViewModel
                 ping.PingCompleted += new PingCompletedEventHandler(pingCompleted);
                 ping.SendAsync(ip, 100, ip);
             }
-        }
+
+            if (ipAdresses.Count() > 0) 
+            {
+                foreach (IPAddress iPAddress in ipAdresses) 
+                {
+                    IPEndPoint iPEndPoint = new IPEndPoint(iPAddress, 8000);
+                    ChatClient client = new ChatClient(localIp, iPEndPoint);
+                    client.pingAvalibleUsers(ref avalibleClients);
+                }
+            }
+           }
 
         private void initLocalIp() {
             IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
@@ -77,6 +112,7 @@ namespace InternalComm.ViewModel
                     localIp = ipAddress;
                 }
             }
+            endpoint = new IPEndPoint(localIp, 8000);
         }
 
         private void initIpBase() {
