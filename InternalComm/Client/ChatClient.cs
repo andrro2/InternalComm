@@ -17,7 +17,7 @@ namespace InternalComm.Client
         byte[] bytes = new byte[1024];
         private Dictionary<string, ChatClient> avalibleClients;
         private bool isClientAvalible = false;
-        private string clientName;
+        private string clientName = "";
 
         public IPEndPoint EndPoint { get => endPoint; set => endPoint = value; }
         public bool IsClientAvalible { get => isClientAvalible; set => isClientAvalible = value; }
@@ -47,6 +47,7 @@ namespace InternalComm.Client
 
         public void pingAvalibleUsers()
         {
+            Console.WriteLine(clientName);
             Socket client = new Socket(iPAddress.AddressFamily,
                 SocketType.Stream, ProtocolType.Tcp);
             try
@@ -67,8 +68,12 @@ namespace InternalComm.Client
                 Console.WriteLine("Echoed test = {0}",
                     Encoding.ASCII.GetString(bytes, 0, bytesRec));
 
-                clientName = Encoding.ASCII.GetString(bytes, 0, bytesRec);
-                avalibleClients.Add(clientName,this);
+                string TempName = Encoding.ASCII.GetString(bytes, 0, bytesRec).ToString();
+                if(TempName != null) {
+                    clientName = TempName;
+                    avalibleClients.Add(clientName, this);
+                }
+                
 
                 // Release the socket.  
                 client.Shutdown(SocketShutdown.Both);
@@ -81,6 +86,7 @@ namespace InternalComm.Client
             catch (SocketException se)
             {
                 isClientAvalible = false;
+                Console.WriteLine(clientName);
                 if (avalibleClients.Count > 0 && avalibleClients.ContainsKey(clientName))
                     avalibleClients.Remove(clientName);
             }
