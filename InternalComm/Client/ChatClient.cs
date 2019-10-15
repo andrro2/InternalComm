@@ -68,10 +68,14 @@ namespace InternalComm.Client
                 Console.WriteLine("Echoed test = {0}",
                     Encoding.ASCII.GetString(bytes, 0, bytesRec));
 
-                string TempName = Encoding.ASCII.GetString(bytes, 0, bytesRec).ToString();
+                string TempName =(string) Encoding.ASCII.GetString(bytes, 0, bytesRec);
                 if(TempName != null) {
                     clientName = TempName;
-                    avalibleClients.Add(clientName, this);
+                    if (!avalibleClients.ContainsKey(clientName))
+                    {
+                        avalibleClients.Add(clientName, this);
+                    }
+                    else { avalibleClients[clientName] = this; }
                 }
                 
 
@@ -79,20 +83,12 @@ namespace InternalComm.Client
                 client.Shutdown(SocketShutdown.Both);
                 client.Close();
             }
-            catch (ArgumentNullException ane)
-            {
-                
-            }
             catch (SocketException se)
             {
                 isClientAvalible = false;
                 Console.WriteLine(clientName);
                 if (avalibleClients.Count > 0 && avalibleClients.ContainsKey(clientName))
                     avalibleClients.Remove(clientName);
-            }
-            catch (Exception e)
-            {
-                
             }
         }
     }
