@@ -25,7 +25,7 @@ namespace InternalComm.ViewModel
         private IPAddress localIp = null;
         private IPEndPoint endpoint = null;
         private LocalServer server;
-        private string name = "Rozner";
+        private string name = "RoznerPc";
 
         public ObservableCollection<string> ConnectedUsers { get => connectedUsers; set => connectedUsers = value; }
 
@@ -71,6 +71,7 @@ namespace InternalComm.ViewModel
             Console.WriteLine("Avalible clients: " + avalibleClients.Count());
             if (avalibleClients.Count() > 0)
             {
+                connectedUsers.Clear();
                 foreach (KeyValuePair<string, ChatClient> keyValuePair in avalibleClients)
                 {
                     connectedUsers.Add(keyValuePair.Key);
