@@ -4,23 +4,40 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace InternalComm.Client
 {
     class ChatClient
     {
+        private Thread _clientThread;
         private IPEndPoint endPoint;
         private IPAddress iPAddress;
         byte[] bytes = new byte[1024];
+        private Dictionary<string, IPAddress> avalibleClients;
 
-        public ChatClient(IPAddress iPAddress, IPEndPoint endPoint)
+        public ChatClient(IPAddress iPAddress, IPEndPoint endPoint, ref Dictionary<string, IPAddress> avalibleClients)
         {
+            this.avalibleClients = avalibleClients;
             this.iPAddress = iPAddress;
             this.endPoint = endPoint;
+            _clientThread = new Thread(pingAvalibleUsers);
         }
 
-        public void pingAvalibleUsers(ref Dictionary<string, IPAddress> avalibleClients)
+        public void startPingingClients() 
+        {
+            Console.WriteLine(_clientThread.ThreadState);
+            if (!_clientThread.IsAlive) 
+            {
+                Console.WriteLine("client thread started");
+                _clientThread.Start();
+            }
+        }
+
+
+
+        public void pingAvalibleUsers()
         {
             Socket client = new Socket(iPAddress.AddressFamily,
                 SocketType.Stream, ProtocolType.Tcp);
@@ -47,16 +64,17 @@ namespace InternalComm.Client
             }
             catch (ArgumentNullException ane)
             {
-                Console.WriteLine("ArgumentNullException : {0}", ane.ToString());
+                
             }
             catch (SocketException se)
             {
-                Console.WriteLine("SocketException : {0}", se.ToString());
+                
             }
             catch (Exception e)
             {
-                Console.WriteLine("Unexpected exception : {0}", e.ToString());
+                
             }
+            Console.WriteLine("client thread finished");
         }
     }
 }

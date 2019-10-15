@@ -51,7 +51,7 @@ namespace InternalComm.ViewModel
             string ip = (string)e.UserState;
             if (e.Reply != null && e.Reply.Status == IPStatus.Success) 
             {
-                if (!connectedUsers.Contains(ip) && !IPAddress.Parse(ip).Equals(localIp))
+                if (!ipAdresses.Contains(IPAddress.Parse(ip)) && !IPAddress.Parse(ip).Equals(localIp))
                 {
                     ipAdresses.Add(IPAddress.Parse(ip));
                     return;
@@ -94,11 +94,12 @@ namespace InternalComm.ViewModel
 
             if (ipAdresses.Count() > 0) 
             {
+                Console.WriteLine(ipAdresses.Count());
                 foreach (IPAddress iPAddress in ipAdresses) 
                 {
                     IPEndPoint iPEndPoint = new IPEndPoint(iPAddress, 8000);
-                    ChatClient client = new ChatClient(localIp, iPEndPoint);
-                    client.pingAvalibleUsers(ref avalibleClients);
+                    ChatClient client = new ChatClient(localIp, iPEndPoint, ref avalibleClients);
+                    client.startPingingClients();
                 }
             }
            }
