@@ -19,7 +19,8 @@ namespace InternalComm.ViewModel
     {
         private ObservableCollection<string> connectedUsers = new ObservableCollection<string>();
         private List<IPAddress> ipAdresses = new List<IPAddress>();
-        private Dictionary<string, IPAddress> avalibleClients = new Dictionary<string, IPAddress>();
+        private Dictionary<string, ChatClient> avalibleClients = new Dictionary<string, ChatClient>();
+        private List<ChatClient> possibleClients = new List<ChatClient>();
         private string ipBase = "192.168.100.";
         private IPAddress localIp = null;
         private IPEndPoint endpoint = null;
@@ -59,50 +60,68 @@ namespace InternalComm.ViewModel
                 return;
 
             }
-            else if(e.Reply.Status == IPStatus.TimeExceeded) { ipAdresses.Remove(IPAddress.Parse(ip)); }
-            
-            /*if (e.Reply != null && e.Reply.Status == IPStatus.Success)
-            {
-                    string name;
-                    try
-                    {
-                        IPHostEntry hostEntry = Dns.GetHostEntry(ip);
-                        name = hostEntry.HostName;
-                    }
-                    catch (SocketException ex)
-                    {
-                        name = "?";
-                    }
-                    Console.WriteLine("{0} ({1}) is up: ({2} ms)", ip, name, e.Reply.RoundtripTime);
-            }
-            
-            else if (e.Reply == null)
-            {
-                Console.WriteLine("Pinging {0} failed. (Null Reply object?)", ip);
-            }*/
+            else if(e.Reply.Status == IPStatus.TimedOut && ipAdresses.Contains(IPAddress.Parse(ip))) {
+                Console.WriteLine("removed");
+                ipAdresses.Remove(IPAddress.Parse(ip)); }
+
         }
 
         public void addToCollection(Object sender, EventArgs e)
         {
-            for (int i = 1; i < 255; i++)
+            Console.WriteLine("Avalible clients: " + avalibleClients.Count());
+            if (possibleClients.Count() > 0)
             {
-                string ip = ipBase + i.ToString();
-                Ping ping = new Ping();
-                ping.PingCompleted += new PingCompletedEventHandler(pingCompleted);
-                ping.SendAsync(ip, 100, ip);
-            }
-
-            if (ipAdresses.Count() > 0) 
-            {
-                Console.WriteLine(ipAdresses.Count());
-                foreach (IPAddress iPAddress in ipAdresses) 
+                foreach (ChatClient chatClient in possibleClients)
                 {
-                    IPEndPoint iPEndPoint = new IPEndPoint(iPAddress, 8000);
-                    ChatClient client = new ChatClient(localIp, iPEndPoint, ref avalibleClients);
-                    client.startPingingClients();
+                    chatClient.startPingingClients();
                 }
             }
-           }
+
+                for (int i = 1; i < 255; i++)
+                {
+                    string ip = ipBase + i.ToString();
+                    Ping ping = new Ping();
+                    ping.PingCompleted += new PingCompletedEventHandler(pingCompleted);
+                    ping.SendAsync(ip, 100, ip);
+                }
+
+                if (ipAdresses.Count() > 0)
+                {
+                    Console.WriteLine("ipAdresses: " + ipAdresses.Count());
+                    foreach (IPAddress iPAddress in ipAdresses)
+                    {
+                        IPEndPoint iPEndPoint = new IPEndPoint(iPAddress, 8000);
+                        ChatClient client = new ChatClient(localIp, iPEndPoint, ref avalibleClients);
+                        if (possibleClients.Count() > 0)
+                        {
+                            int counter = 0;
+                            foreach (ChatClient chatClient in possibleClients)
+                            {
+                                if (chatClient.EndPoint.Equals(iPEndPoint)) { counter++; }
+                            }
+                            if (counter == 0) { possibleClients.Add(client); }
+
+                        }
+                        else { possibleClients.Add(client); }
+                    }
+                }
+
+                if (possibleClients.Count > 0)
+                {
+                    List<ChatClient> templist = possibleClients.ToList();
+                    foreach (ChatClient chatClient in possibleClients)
+                    {
+                        if (!ipAdresses.Contains(chatClient.EndPoint.Address) && !chatClient.IsClientAvalible)
+                        {
+                            templist.Remove(chatClient);
+                        }
+                    }
+                    possibleClients = templist.ToList();
+                }
+                Console.WriteLine(possibleClients.Count());
+
+            }
+
 
         private void initLocalIp() {
             IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());

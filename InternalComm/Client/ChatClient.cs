@@ -15,9 +15,14 @@ namespace InternalComm.Client
         private IPEndPoint endPoint;
         private IPAddress iPAddress;
         byte[] bytes = new byte[1024];
-        private Dictionary<string, IPAddress> avalibleClients;
+        private Dictionary<string, ChatClient> avalibleClients;
+        private bool isClientAvalible = false;
+        private string clientName;
 
-        public ChatClient(IPAddress iPAddress, IPEndPoint endPoint, ref Dictionary<string, IPAddress> avalibleClients)
+        public IPEndPoint EndPoint { get => endPoint; set => endPoint = value; }
+        public bool IsClientAvalible { get => isClientAvalible; set => isClientAvalible = value; }
+
+        public ChatClient(IPAddress iPAddress, IPEndPoint endPoint, ref Dictionary<string, ChatClient> avalibleClients)
         {
             this.avalibleClients = avalibleClients;
             this.iPAddress = iPAddress;
@@ -27,10 +32,13 @@ namespace InternalComm.Client
 
         public void startPingingClients() 
         {
-            Console.WriteLine(_clientThread.ThreadState);
-            if (!_clientThread.IsAlive) 
+            if (_clientThread.ThreadState == ThreadState.Unstarted) 
             {
-                Console.WriteLine("client thread started");
+                _clientThread.Start();
+            }
+            if (_clientThread.ThreadState == ThreadState.Stopped)
+            {
+                _clientThread = new Thread(pingAvalibleUsers);
                 _clientThread.Start();
             }
         }
@@ -46,6 +54,7 @@ namespace InternalComm.Client
                 client.Connect(endPoint);
                 Console.WriteLine("Socket connected to {0}",
                     client.RemoteEndPoint.ToString());
+                isClientAvalible = true;
 
                 // Encode the data string into a byte array.  
                 byte[] msg = Encoding.ASCII.GetBytes("This is a test<EOF>");
@@ -58,6 +67,9 @@ namespace InternalComm.Client
                 Console.WriteLine("Echoed test = {0}",
                     Encoding.ASCII.GetString(bytes, 0, bytesRec));
 
+                clientName = Encoding.ASCII.GetString(bytes, 0, bytesRec);
+                avalibleClients.Add(clientName,this);
+
                 // Release the socket.  
                 client.Shutdown(SocketShutdown.Both);
                 client.Close();
@@ -68,13 +80,14 @@ namespace InternalComm.Client
             }
             catch (SocketException se)
             {
-                
+                isClientAvalible = false;
+                if (avalibleClients.Count > 0 && avalibleClients.ContainsKey(clientName))
+                    avalibleClients.Remove(clientName);
             }
             catch (Exception e)
             {
                 
             }
-            Console.WriteLine("client thread finished");
         }
     }
 }
