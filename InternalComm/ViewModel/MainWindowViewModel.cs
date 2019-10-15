@@ -71,12 +71,15 @@ namespace InternalComm.ViewModel
             Console.WriteLine("Avalible clients: " + avalibleClients.Count());
             if (avalibleClients.Count() > 0)
             {
-                connectedUsers.Clear();
                 foreach (KeyValuePair<string, ChatClient> keyValuePair in avalibleClients)
                 {
-                    connectedUsers.Add(keyValuePair.Key);
+                    if (!connectedUsers.Contains(keyValuePair.Key))
+                    {
+                        connectedUsers.Add(keyValuePair.Key);
+                    }
                 }
             }
+            else if (avalibleClients.Count() == 0) { connectedUsers.Clear(); }
             if (possibleClients.Count() > 0)
             {
                 foreach (ChatClient chatClient in possibleClients)
